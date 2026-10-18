@@ -27,6 +27,15 @@ data class YelpShop(
 ) {
     fun displayRating(): String = rating.toString().removeSuffix(".0")
 
+    fun displayRestaurantStyle(): String = categories
+        .asSequence()
+        .map(YelpCategories::title)
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .distinct()
+        .take(MAX_DISPLAYED_CATEGORIES)
+        .joinToString(" • ")
+
     fun displayPhoneNumber(): String {
         val originalPhone = phone.orEmpty()
         val digits = originalPhone.filter(Char::isDigit)
@@ -36,6 +45,10 @@ data class YelpShop(
             else -> return originalPhone
         }
         return "(${nationalNumber.take(3)}) ${nationalNumber.substring(3, 6)}-${nationalNumber.takeLast(4)}"
+    }
+
+    private companion object {
+        const val MAX_DISPLAYED_CATEGORIES = 2
     }
 }
 

@@ -1,8 +1,8 @@
 # Recipe Compose
 
-Recipe Compose is a portfolio mobile application originally built to learn Jetpack Compose and later redesigned into a fuller product sample. It connects recipe discovery with restaurant search and real-world navigation: users can explore meals from TheMealDB, save recipes locally, find restaurants through Yelp, inspect a destination on an interactive map, and continue into driving directions.
+Recipe Compose began as a project to learn Jetpack Compose. I later added restaurant search and migrated the app to Compose Multiplatform. It runs on Android and iOS with shared UI and state.
 
-The project now demonstrates an incremental Compose Multiplatform migration as well as modern Compose development across state-driven UI, Ktor networking, Room persistence, navigation, responsive layouts, and platform services. Its primary experience—including onboarding, recipe discovery, search, saved dishes, nearby restaurants, location access, interactive maps, and directions—runs on Android and iOS from shared UI and state.
+Users can browse meals from TheMealDB, save recipes locally, find restaurants through Yelp, and open driving directions from a map. Shared code handles onboarding, search, saved dishes, networking, and persistence. Platform code handles permissions, location, maps, and external navigation.
 
 ## App demo
 
@@ -16,46 +16,46 @@ The project now demonstrates an incremental Compose Multiplatform migration as w
   <strong><a href="docs/demo/recipe-compose-demo.m4v">Watch the Android and iOS walkthrough</a></strong>
 </p>
 
-## Product capabilities
+## Features
 
-- Learn the core discovery, saving, and restaurant features through a focused first-run onboarding flow.
-- Move between recipe discovery, search, nearby restaurants, and saved dishes from a persistent navigation bar.
-- Browse recipe categories or use a compact, image-first search to find dishes by name.
-- Open a complete recipe details page, follow its original source or video, and save the dish locally.
-- Open saved dishes as full recipe details, remove an individual dish with confirmation, or use swipe-to-delete for quick list management.
-- Discover Yelp restaurants after explicitly choosing the device's current location, remember that choice for later visits, or enter a city or ZIP code instead.
+- First-run onboarding introduces recipe discovery, saved dishes, and restaurant search.
+- Use the navigation bar to switch between recipes, search, nearby restaurants, and saved dishes.
+- Browse recipe categories or search for dishes by name.
+- Read recipe details, open the original source or video, and save recipes locally.
+- Open saved recipes, remove one with confirmation, or swipe to delete it.
+- Find Yelp restaurants using the device's current location or a city or ZIP code. The app remembers a successful device-location choice for later visits.
 - Search the loaded area by restaurant name or cuisine.
 - View a selected restaurant on an interactive Google Map on Android or native MapKit map on iOS.
-- Reposition the destination marker and launch driving directions to the active pin.
-- Respond to loading, error, and network-connectivity states.
+- Move the destination marker and open driving directions to that location.
+- Show loading, error, and connectivity states.
 
-## Engineering highlights
+## Implementation
 
-- Declarative, state-driven screens built with Compose Multiplatform and Material 3.
-- Unidirectional UI state exposed through `StateFlow`-backed shared stores and Android ViewModels.
-- Lifecycle-aware Flow collection that avoids observing inactive screens.
-- Explicit UI events for retries, searches, refreshes, dialogs, favorites, and navigation.
-- Debounced remote search with cancellation to prevent outdated requests from controlling the UI.
+- Compose Multiplatform screens with Material 3.
+- Shared stores and Android ViewModels expose UI state through `StateFlow`.
+- Flow collection follows the screen lifecycle.
+- UI events handle retries, searches, refreshes, dialogs, favorites, and navigation.
+- Remote search uses debounce and cancels outdated requests.
 - Shared Ktor clients with `kotlinx.serialization` and Ktor `MockEngine` contract tests.
 - Navigation Compose routes with state passed between destinations.
-- Reusable Compose components for dialogs, media cards, links, lists, and application chrome.
+- Shared Compose components for dialogs, media cards, links, lists, and navigation controls.
 - A shared recipe-details page reused by Featured Dish, search results, and saved-dish destinations.
-- A debug-only screen preview catalog with representative data and paired light/dark renders.
-- Purpose-built editorial feeds, adaptive galleries, and compact management lists for different content types.
-- A semantic Material 3 design system with coordinated light/dark palettes, typography, spacing, and shapes.
-- A shared, theme-aware startup experience with consistent branding and loading feedback on Android and iOS.
-- Shared screen transitions and an app-owned frame-driven progress indicator for predictable motion across platforms.
-- Local-first favorites with Room KMP, platform-specific database construction, and swipe-to-delete interactions.
-- Preferences DataStore for non-blocking onboarding state and retained location intent.
-- External navigation handoff that follows the currently selected map marker.
+- A debug-only preview catalog with sample data and light and dark previews.
+- Feeds, galleries, and saved-dish lists use layouts suited to their content.
+- A shared Material 3 theme defines light and dark colors, typography, spacing, and shapes.
+- A shared startup screen follows the app theme on Android and iOS.
+- Shared screen transitions and a progress indicator driven by animation frames.
+- Room KMP stores favorites locally, with database construction in each platform's source set.
+- Preferences DataStore stores onboarding completion and the user's choice to use device location.
+- Driving directions use the selected map marker.
 - Foreground-only location access with support for approximate and precise permission.
-- User-initiated permission requests, cache-first location resolution, a bounded fresh-location attempt, and manual search fallbacks.
+- Location permission is requested after the user chooses device location. The app tries a recent coordinate, then requests a new location with a timeout. Manual search remains available if location lookup fails.
 - Build-time credential injection, redacted authorization headers, and debug-only HTTP body logging.
 - Companion documentation for the UI redesign, Gradle Kotlin DSL migration, KMP assessment, and Compose Multiplatform migration path.
 
 ## Restaurant navigation
 
-The restaurant workflow turns the user's current area into an actionable destination:
+The restaurant search follows these steps:
 
 ```text
 User chooses current location or enters an area
@@ -73,13 +73,15 @@ Optional marker adjustment
 Platform driving directions
 ```
 
-Location access is requested only after the user chooses **Use my location**. After a successful resolution, Preferences DataStore remembers that choice so later Nearby visits can resolve the current area automatically. The operating system remains the source of truth for the actual permission grant on both platforms: if access is revoked, the app returns to its permission/manual fallback instead of treating the stored preference as authorization. The app first accepts a recent coordinate and otherwise performs a bounded fresh-location request, so it cannot remain on a location spinner indefinitely. If access is declined or coordinates are unavailable, the Nearby screen remains usable through a city or ZIP code search. Exact coordinates and location history are never persisted, and the app does not request background location.
+Location access is requested after the user chooses **Use my location**. After a successful request, Preferences DataStore saves that choice for later Nearby visits. The app checks the operating system's permission grant each time. If access is revoked, it returns to the permission or manual-search option.
+
+The app uses a recent coordinate when available. Otherwise, it requests a new location with a timeout. Users can enter a city or ZIP code if access is declined or a location is unavailable. The app stores neither exact coordinates nor location history and does not request background location.
 
 The directions action uses either the restaurant marker or the user-adjusted marker as its destination. Android hands the destination to Google Maps-compatible navigation; iOS opens Apple Maps for driving directions. The navigation app manages the route origin after the handoff.
 
 ## Architecture
 
-The repository keeps installable Android and iOS hosts around a Kotlin Multiplatform `:shared` library. Common code owns portable UI, state, repositories, networking, resources, and persistence contracts. Platform source sets and hosts supply lifecycle integration, storage paths, permissions, location, maps, and external navigation.
+The Android and iOS apps use a Kotlin Multiplatform `:shared` library. Common code contains UI, state, repositories, networking, resources, and persistence contracts. Platform source sets and host apps provide lifecycle integration, storage paths, permissions, location, maps, and external navigation.
 
 ```mermaid
 flowchart TD
@@ -154,7 +156,7 @@ RecipeCompose/
 └── gradle/                      Version catalog and shared build configuration
 ```
 
-Contributor rule of thumb: place portable UI and route behavior in `shared/src/commonMain/.../presentation`, keep platform-independent contracts and state models under `domain`, and put Ktor/Room implementations under `data`. Android- or iOS-specific permissions, location, maps, storage paths, and external actions belong in their platform source sets or host applications and are wired through Koin.
+Place shared UI and navigation in `shared/src/commonMain/.../presentation`, contracts and state models under `domain`, and Ktor and Room implementations under `data`. Platform permissions, location, maps, storage paths, and external actions belong in their platform source sets or host apps. Koin supplies those implementations.
 
 ## Technology
 
@@ -199,7 +201,7 @@ Contributor rule of thumb: place portable UI and route behavior in `shared/src/c
    BASE_URL=https://www.themealdb.com/api/json/v1/1/
    ```
 
-   `local.properties` is excluded from version control. The checked-in `local.defaults.properties` supplies non-sensitive defaults for project synchronization and keyless CI builds.
+   `local.properties` is excluded from version control. The checked-in `local.defaults.properties` supplies defaults for project sync and CI builds without credentials.
 
 3. Build the debug application:
 
@@ -209,13 +211,13 @@ Contributor rule of thumb: place portable UI and route behavior in `shared/src/c
 
 4. Run the `app` configuration on an Android device or emulator with Google APIs. For iOS, open `iosApp/iosApp.xcodeproj` in Xcode or use the checked-in `iosApp` Xcode Application configuration in Android Studio. Select a development team under **Signing & Capabilities** before installing on a physical iPhone.
 
-On the first Nearby visit, choose **Use my location** and grant approximate or precise foreground access to load local restaurants. The permission prompt is user initiated and can be declined without blocking the feature; enter a city or ZIP code instead. A successful device-location choice is remembered for later visits, and **Choose another location** resets that behavior.
+On the first Nearby visit, choose **Use my location** and grant foreground access, or enter a city or ZIP code. After a successful device-location request, the app remembers that choice. **Choose another location** resets it.
 
 ## Credential handling
 
-Local configuration is injected without committing credentials. Android receives the values through generated `BuildConfig` fields and manifest placeholders; the iOS framework receives the Yelp configuration from ignored build output with an optional Xcode build-setting override.
+Android receives credentials through generated `BuildConfig` fields and manifest placeholders. The iOS framework receives Yelp configuration from ignored build output, with an optional Xcode build-setting override.
 
-This protects the repository, not the compiled APK. For an appropriate deployment configuration:
+Build-time configuration keeps credentials out of Git. Credentials can still be extracted from a compiled app. For deployment:
 
 - Restrict the Maps key to the application ID and signing-certificate fingerprint.
 - Use separate development and production credentials.
@@ -242,8 +244,8 @@ For visual iteration, open `app/src/debug/java/com/example/recipe_app_compose/pr
 
 ## Screenshots
 
-The two hosts share the same product language, responsive Compose components,
-theme system, and feature state while retaining native platform integrations.
+Android and iOS use shared Compose components, themes, and feature state.
+Each platform supplies its own location, map, and navigation integrations.
 
 ### Android
 
@@ -326,4 +328,4 @@ contracts.
 
 ## Contact
 
-Questions and feedback are welcome at **stefanbusiness95@gmail.com**.
+Questions and feedback: stefanbusiness95@gmail.com

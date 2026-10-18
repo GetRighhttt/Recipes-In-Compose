@@ -46,6 +46,8 @@ class YelpRepositoryImplTest {
         assertEquals(42u, shop.reviewCount)
         assertEquals("https://example.com/shop.jpg", shop.imageUrl)
         assertEquals("32541", shop.location.zipCode)
+        assertEquals("New American • Breakfast & Brunch", shop.displayRestaurantStyle())
+        assertEquals("(850) 555-1234", shop.displayPhoneNumber())
 
         val request = requests.single()
         assertEquals("Bearer test-key", request.headers[HttpHeaders.Authorization])
@@ -134,10 +136,15 @@ class YelpRepositoryImplTest {
                 "id": "shop-1",
                 "name": "Recipe Cafe",
                 "rating": 4.5,
+                "phone": "+18505551234",
                 "is_closed": false,
                 "review_count": 42,
                 "image_url": "https://example.com/shop.jpg",
-                "categories": [],
+                "categories": [
+                  {"alias": "newamerican", "title": "New American"},
+                  {"alias": "breakfast_brunch", "title": "Breakfast & Brunch"},
+                  {"alias": "cafes", "title": "Cafes"}
+                ],
                 "coordinates": {"latitude": 30.4, "longitude": -86.6},
                 "location": {
                   "city": "Destin",

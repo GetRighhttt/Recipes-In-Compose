@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,6 +69,7 @@ import com.example.recipe_app_compose.shared.generated.resources.searching_near_
 import com.example.recipe_app_compose.shared.generated.resources.try_again
 import com.example.recipe_app_compose.shared.generated.resources.unable_to_load_shops
 import com.example.recipe_app_compose.shared.generated.resources.use_my_location
+import com.example.recipe_app_compose.ui.theme.AppSizes
 import com.example.recipe_app_compose.ui.theme.AppSpacing
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -404,11 +406,15 @@ private fun NearbyShopList(
         verticalArrangement = Arrangement.spacedBy(AppSpacing.Medium),
     ) {
         items(shops, key = YelpShop::id) { shop ->
+            val restaurantStyle = shop.displayRestaurantStyle()
+            val phoneNumber = shop.displayPhoneNumber()
+
             AppHorizontalMediaCard(
                 painter = rememberAsyncImagePainter(shop.imageUrl),
                 imageDescription = shop.name,
                 onClick = { onShopSelected(shop) },
                 modifier = Modifier.fillMaxWidth(),
+                imageSize = AppSizes.RestaurantCardImage,
             ) {
                 Text(
                     text = shop.name,
@@ -416,12 +422,33 @@ private fun NearbyShopList(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = "${shop.displayRating()} ★",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.padding(top = AppSpacing.ExtraSmall),
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AppSpacing.ExtraSmall),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (restaurantStyle.isNotBlank()) {
+                        Text(
+                            text = restaurantStyle,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Text(
+                        text = "${shop.displayRating()} ★",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = if (restaurantStyle.isNotBlank()) {
+                            Modifier.padding(start = AppSpacing.Small)
+                        } else {
+                            Modifier
+                        },
+                    )
+                }
                 Text(
                     text = listOf(shop.location.address1, shop.location.city, shop.location.state)
                         .filter(String::isNotBlank)
@@ -432,6 +459,16 @@ private fun NearbyShopList(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = AppSpacing.Small),
                 )
+                if (phoneNumber.isNotBlank()) {
+                    Text(
+                        text = phoneNumber,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = AppSpacing.ExtraSmall),
+                    )
+                }
             }
         }
     }
